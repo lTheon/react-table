@@ -35,7 +35,11 @@ export const useResizeColumns = hooks => {
 const defaultGetResizerProps = (props, { instance, header }) => {
   const { dispatch } = instance
 
+  let dragTimeout
+  let upTimeout
+
   const onResizeStart = (e, header) => {
+    clearTimeout(upTimeout)
     let isTouchEvent = false
     if (e.type === 'touchstart') {
       // lets not respond to multiple touches (e.g. 2 or 3 fingers)
@@ -57,7 +61,12 @@ const defaultGetResizerProps = (props, { instance, header }) => {
     const handlersAndEvents = {
       mouse: {
         moveEvent: 'mousemove',
-        moveHandler: e => dispatchMove(e.clientX),
+        moveHandler: e => {
+          clearTimeout(dragTimeout)
+          dragTimeout = setTimeout(() => {
+            dispatchMove(e.clientX);
+          }, 30)
+        } ,
         upEvent: 'mouseup',
         upHandler: e => {
           document.removeEventListener(
@@ -68,7 +77,7 @@ const defaultGetResizerProps = (props, { instance, header }) => {
             'mouseup',
             handlersAndEvents.mouse.upHandler
           )
-          dispatchEnd()
+          upTimeout = setTimeout(() => dispatchEnd(), 40)
         },
       },
       touch: {
@@ -78,7 +87,10 @@ const defaultGetResizerProps = (props, { instance, header }) => {
             e.preventDefault()
             e.stopPropagation()
           }
-          dispatchMove(e.touches[0].clientX)
+          clearTimeout(dragTimeout)
+          dragTimeout = setTimeout(() => {
+            dispatchMove(e.touches[0].clientX);
+          }, 30)
           return false
         },
         upEvent: 'touchend',
@@ -91,7 +103,7 @@ const defaultGetResizerProps = (props, { instance, header }) => {
             handlersAndEvents.touch.upEvent,
             handlersAndEvents.touch.moveHandler
           )
-          dispatchEnd()
+          upTimeout = setTimeout(() => dispatchEnd(), 40)
         },
       },
     }
